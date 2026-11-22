@@ -77,3 +77,12 @@ live site into a made-up game folder and goes through the cases above. It never 
 | `src/Json.cs` | reading and writing JSON |
 
 The exe is not signed, so Windows SmartScreen warns the first time it runs.
+
+## Privacy
+
+The app has no account, telemetry or analytics. While its window is open it downloads the pack's list and files from
+deadlockconfig.com; those requests say which version of the app is asking and nothing else.
+
+## License
+
+[MIT](LICENSE)
