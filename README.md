@@ -6,6 +6,13 @@ Install, and the paks and gameinfo.gi go into the game folder.
 
 By jcStani and HoppCX.
 
+## Download
+
+**[CompLock.exe](https://github.com/jcStani/CompLock-Updater/releases/latest/download/CompLock.exe)** is the newest
+release: one file, nothing to install. Every release is built from its tag by GitHub Actions
+(`.github/workflows/release.yml`), and its page under [Releases](https://github.com/jcStani/CompLock-Updater/releases)
+gives the file's SHA-256.
+
 ## What it does
 
 - Finds Deadlock through Steam (or a folder you pick) and reads what is already in `addons`.
@@ -56,6 +63,9 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 
 This makes `CompLock.exe` with the C# compiler that is part of Windows (.NET Framework 4.x, C# 5): nothing to
 install, and nothing needed to run it on Windows 10 or 11. Windows only.
+
+To release: raise `AppVersion` in `src/Core.cs`, commit, and push a tag of the same number (`v2` for 2). The release
+workflow builds the exe and publishes it; the download link above and the site's button then give the new one.
 
 ## Test
 
