@@ -55,18 +55,6 @@ Every pak is checked against the size and CRC-32 the site gives and the SHA-256 
 beside `addons`; nothing in the game folder changes until every download checked out. The app does not install into a
 game folder Deadlock is running from.
 
-## Build
-
-```powershell
-powershell -ExecutionPolicy Bypass -File build.ps1
-```
-
-This makes `CompLock.exe` with the C# compiler that is part of Windows (.NET Framework 4.x, C# 5): nothing to
-install, and nothing needed to run it on Windows 10 or 11. Windows only.
-
-To release: raise `AppVersion` in `src/Core.cs`, commit, and push a tag of the same number (`v2` for 2). The release
-workflow builds the exe and publishes it; the download link above and the site's button then give the new one.
-
 ## Test
 
 ```powershell
