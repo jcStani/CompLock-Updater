@@ -3,15 +3,6 @@
 # download far more often than a zip.
 # deadlockconfig.com links to releases/latest/download/CompLock.zip, so the newest release is what people get.
 # The tag has to match AppVersion in src/Core.cs.
-#
-# The exe is signed with Microsoft Artifact Signing (Azure) once these exist under
-# Settings > Secrets and variables > Actions:
-#   variables  AZURE_SIGNING_ACCOUNT (the signing account's name), AZURE_SIGNING_PROFILE (the certificate profile's
-#              name), AZURE_SIGNING_ENDPOINT (the account's region, e.g. https://eus.codesigning.azure.net)
-#   secrets    AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET (an app registration that has the
-#              "Artifact Signing Certificate Profile Signer" role on the signing account)
-# Without AZURE_SIGNING_ACCOUNT the release is published unsigned. With it, a release whose signature does not
-# check out fails rather than go out unsigned.
 name: release
 on:
   push:
@@ -36,29 +27,6 @@ jobs:
       - name: Build
         shell: powershell
         run: ./build.ps1
-      - name: Sign the exe
-        if: ${{ vars.AZURE_SIGNING_ACCOUNT != '' }}
-        uses: azure/artifact-signing-action@v2
-        with:
-          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
-          signing-account-name: ${{ vars.AZURE_SIGNING_ACCOUNT }}
-          certificate-profile-name: ${{ vars.AZURE_SIGNING_PROFILE }}
-          files: ${{ github.workspace }}\CompLock.exe
-          file-digest: SHA256
-          timestamp-rfc3161: http://timestamp.acs.microsoft.com
-          timestamp-digest: SHA256
-          description: CompLock Updater
-          description-url: https://github.com/${{ github.repository }}
-      - name: Check the signature
-        if: ${{ vars.AZURE_SIGNING_ACCOUNT != '' }}
-        shell: powershell
-        run: |
-          $s = Get-AuthenticodeSignature CompLock.exe
-          if ($s.Status -ne 'Valid') { throw "CompLock.exe: signature is $($s.Status)" }
-          "signed by $($s.SignerCertificate.Subject)"
       - name: Publish the release
         shell: powershell
         env:
@@ -69,18 +37,13 @@ jobs:
           $exe = (Get-FileHash CompLock.exe -Algorithm SHA256).Hash.ToLower()
           $zip = (Get-FileHash CompLock.zip -Algorithm SHA256).Hash.ToLower()
           $size = (Get-Item CompLock.exe).Length
-          $signing = if ((Get-AuthenticodeSignature CompLock.exe).Status -eq 'Valid') {
-            "The exe is signed. Windows may still ask before its first run while the certificate is new."
-          } else {
-            "The exe is not signed, so Windows SmartScreen warns the first time it runs: More info, then Run anyway."
-          }
           $notes = @(
             "CompLock.zip holds CompLock.exe, built from this tag by GitHub Actions ($size bytes). Open the zip and run CompLock.exe; there is nothing to install."
             ""
             "SHA-256 of CompLock.zip: ``$zip``"
             "SHA-256 of CompLock.exe: ``$exe``"
             ""
-            $signing
+            "The exe is not signed, so Windows SmartScreen warns the first time it runs: More info, then Run anyway."
           ) -join "`n"
           gh release create $env:TAG CompLock.zip --repo $env:GITHUB_REPOSITORY --title "CompLock Updater $env:TAG" --notes $notes
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
