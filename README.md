@@ -8,10 +8,10 @@ By jcStani and HoppCX.
 
 ## Download
 
-**[CompLock.exe](https://github.com/jcStani/CompLock-Updater/releases/latest/download/CompLock.exe)** is the newest
-release: one file, nothing to install. Every release is built from its tag by GitHub Actions
-(`.github/workflows/release.yml`), and its page under [Releases](https://github.com/jcStani/CompLock-Updater/releases)
-gives the file's SHA-256.
+**[CompLock.zip](https://github.com/jcStani/CompLock-Updater/releases/latest/download/CompLock.zip)** is the newest
+release: open the zip and run `CompLock.exe`, one file with nothing to install. Every release is built from its tag by
+GitHub Actions (`.github/workflows/release.yml`), and its page under
+[Releases](https://github.com/jcStani/CompLock-Updater/releases) gives the SHA-256 of the zip and of the exe.
 
 ## What it does
 

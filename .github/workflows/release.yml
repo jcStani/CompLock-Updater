@@ -1,5 +1,7 @@
 # Builds CompLock.exe on Windows and publishes it as a release when a version tag is pushed (v1, v2, ...).
-# deadlockconfig.com links to releases/latest/download/CompLock.exe, so the newest release is what people get.
+# The release holds CompLock.zip with the exe in it, not the bare exe: browsers and antivirus stop an unsigned exe
+# download far more often than a zip.
+# deadlockconfig.com links to releases/latest/download/CompLock.zip, so the newest release is what people get.
 # The tag has to match AppVersion in src/Core.cs.
 name: release
 on:
@@ -31,14 +33,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          $sum = (Get-FileHash CompLock.exe -Algorithm SHA256).Hash.ToLower()
+          Compress-Archive -Path CompLock.exe -DestinationPath CompLock.zip -CompressionLevel Optimal
+          $exe = (Get-FileHash CompLock.exe -Algorithm SHA256).Hash.ToLower()
+          $zip = (Get-FileHash CompLock.zip -Algorithm SHA256).Hash.ToLower()
           $size = (Get-Item CompLock.exe).Length
           $notes = @(
-            "CompLock.exe, built from this tag by GitHub Actions ($size bytes)."
+            "CompLock.zip holds CompLock.exe, built from this tag by GitHub Actions ($size bytes). Open the zip and run CompLock.exe; there is nothing to install."
             ""
-            "SHA-256: ``$sum``"
+            "SHA-256 of CompLock.zip: ``$zip``"
+            "SHA-256 of CompLock.exe: ``$exe``"
             ""
             "The exe is not signed, so Windows SmartScreen warns the first time it runs: More info, then Run anyway."
           ) -join "`n"
-          gh release create $env:TAG CompLock.exe --repo $env:GITHUB_REPOSITORY --title "CompLock Updater $env:TAG" --notes $notes
+          gh release create $env:TAG CompLock.zip --repo $env:GITHUB_REPOSITORY --title "CompLock Updater $env:TAG" --notes $notes
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
