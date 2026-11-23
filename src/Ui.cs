@@ -137,6 +137,26 @@ namespace CompLock
         public Row(MainForm host, JObj item, bool isBase) { this.host = host; this.item = item; this.isBase = isBase; }
         public string Id { get { return item.Str("id"); } }
         public Point UpdateSpot;
+        public readonly List<Row> Subs = new List<Row>();
+        public string SubLabel;
+        bool sub;
+
+        public void Add(Row r) { r.sub = true; r.BackColor = Th.Panel; Subs.Add(r); Controls.Add(r); }
+
+        public int Place(int w)
+        {
+            int h = Measure(w);
+            if (Subs.Count == 0) return h;
+            int P = Th.Px(14), y = h;
+            foreach (Row r in Subs)
+            {
+                int rh = r.Measure(w - 2 * P);
+                r.SetBounds(P, y, w - 2 * P, rh);
+                r.Invalidate();
+                y += rh + Th.Px(6);
+            }
+            return y - Th.Px(6) + P;
+        }
 
         protected override int Draw(Graphics g, int w, bool paint)
         {
@@ -146,8 +166,8 @@ namespace CompLock
             bool on = isBase || (app ? pack.LowVideo : pack.IsOn(id) || pack.Included(item));
             List<JObj> choices = Pack.Choices(item);
             JObj chosen = on ? pack.Chosen(item) : null;
-            int P = Th.Px(14), sw = Th.Px(38), sh = Th.Px(20), x = P + sw + Th.Px(12), right = w - P, y = P;
-            if (paint) Th.Box(g, new Rectangle(0, 0, w - 1, Height - 1), Th.Px(10), Th.Panel, on && !isBase ? Th.LineOn : Th.Line);
+            int P = Th.Px(sub ? 11 : 14), sw = Th.Px(38), sh = Th.Px(20), x = P + sw + Th.Px(12), right = w - P, y = P;
+            if (paint) Th.Box(g, new Rectangle(0, 0, w - 1, Height - 1), Th.Px(sub ? 8 : 10), sub ? Th.Bg : Th.Panel, on && !isBase ? Th.LineOn : Th.Line);
 
             Rectangle sr = new Rectangle(P, y + Th.Px(1), sw, sh);
             if (paint && !isBase) Th.Toggle(g, sr, on);
@@ -325,6 +345,13 @@ namespace CompLock
                 if (i > 0) Hot(l, paint, delegate { host.SetFov(pack.FovValues[i - 1]); });
                 if (i >= 0 && i < pack.FovValues.Count - 1) Hot(r, paint, delegate { host.SetFov(pack.FovValues[i + 1]); });
                 y += bh + Th.Px(2);
+            }
+            if (Subs.Count > 0)
+            {
+                string label = (SubLabel ?? "").ToUpperInvariant();
+                y += Th.Px(10);
+                Th.Text(g, paint, label, Th.Caps, Th.Muted, P + Th.Px(2), y);
+                return y + Th.Measure(g, label.Length > 0 ? label : "X", Th.Caps).Height + Th.Px(8);
             }
             return y + P - Th.Px(2);
         }
@@ -614,9 +641,22 @@ namespace CompLock
             if (Pack != null)
             {
                 list.Controls.Add(new GroupHead("Always in your pack", Pack.Game != "" ? "For Deadlock build " + Pack.Game + "." : ""));
-                foreach (JObj b in Pack.Base) list.Controls.Add(new Row(this, b, true));
+                HashSet<string> inner = new HashSet<string>();
+                foreach (JObj b in Pack.Base)
+                {
+                    Row br = new Row(this, b, true);
+                    string tg = b.Str("toggles");
+                    if (tg != null)
+                    {
+                        inner.Add(tg);
+                        br.SubLabel = b.Str("toggles_label");
+                        foreach (JObj o in Pack.Options) if (o.Str("group") == tg) br.Add(new Row(this, o, false));
+                    }
+                    list.Controls.Add(br);
+                }
                 foreach (JObj grp in Pack.Groups)
                 {
+                    if (inner.Contains(grp.Str("id"))) continue;
                     bool any = false;
                     foreach (JObj o in Pack.Options)
                     {
@@ -646,7 +686,8 @@ namespace CompLock
             {
                 Canvas cv = c as Canvas;
                 if (cv == null) continue;
-                int h = cv.Measure(w);
+                Row row = cv as Row;
+                int h = row != null ? row.Place(w) : cv.Measure(w);
                 cv.SetBounds(pad, y, w, h);
                 y += h + (cv is Row ? Th.Px(8) : 0);
                 cv.Invalidate();
@@ -928,12 +969,20 @@ namespace CompLock
                     bool took = false;
                     if (step == "bottom") { f.list.AutoScrollPosition = new Point(0, 100000); took = true; }
                     else if (step == "button") { f.foot.Press(new Point(-9, -9), true); took = f.foot.Press(f.foot.ButtonSpot, false); }
-                    else foreach (Control c in f.list.Controls)
+                    else
                     {
-                        Row r = c as Row;
-                        if (r == null) continue;
-                        if ("toggle:" + r.Id == step) took = r.Press(new Point(Th.Px(30), Th.Px(24)), true);
-                        if ("update:" + r.Id == step) { r.UpdateSpot = new Point(-9, -9); r.Press(r.UpdateSpot, true); took = r.Press(r.UpdateSpot, false); }
+                        List<Row> rows = new List<Row>();
+                        foreach (Control c in f.list.Controls)
+                        {
+                            Row top = c as Row;
+                            if (top == null) continue;
+                            rows.Add(top); rows.AddRange(top.Subs);
+                        }
+                        foreach (Row r in rows)
+                        {
+                            if ("toggle:" + r.Id == step) took = r.Press(new Point(Th.Px(30), Th.Px(24)), true);
+                            if ("update:" + r.Id == step) { r.UpdateSpot = new Point(-9, -9); r.Press(r.UpdateSpot, true); took = r.Press(r.UpdateSpot, false); }
+                        }
                     }
                     Console.WriteLine(step + ": " + (took ? "clicked" : "nothing to click"));
                     DateTime end = DateTime.Now.AddSeconds(180);
