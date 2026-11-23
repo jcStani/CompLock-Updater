@@ -115,14 +115,12 @@ namespace CompLock
 
     sealed class GroupHead : Canvas
     {
-        readonly string title, text;
-        public GroupHead(string title, string text) { this.title = title; this.text = text; }
+        readonly string title;
+        public GroupHead(string title) { this.title = title; }
         protected override int Draw(Graphics g, int w, bool paint)
         {
             int y = Th.Px(14);
             Th.Text(g, paint, title.ToUpperInvariant(), Th.Caps, Th.Fg, Th.Px(2), y);
-            int tw = Th.Measure(g, title.ToUpperInvariant(), Th.Caps).Width;
-            if (!string.IsNullOrEmpty(text)) Th.Tail(g, paint, text, Th.Small, Th.Muted, new Rectangle(Th.Px(2) + tw + Th.Px(10), y - Th.Px(1), w - tw - Th.Px(14), Th.Px(18)));
             return y + Th.Px(22);
         }
     }
@@ -615,7 +613,7 @@ namespace CompLock
             foreach (Control c in new List<Control>(ToList(list.Controls))) { list.Controls.Remove(c); c.Dispose(); }
             if (Pack != null)
             {
-                list.Controls.Add(new GroupHead("Always in your pack", Pack.Game != "" ? "For Deadlock build " + Pack.Game + "." : ""));
+                list.Controls.Add(new GroupHead("Always in your pack"));
                 HashSet<string> inner = new HashSet<string>();
                 foreach (JObj b in Pack.Base)
                 {
@@ -636,14 +634,14 @@ namespace CompLock
                     foreach (JObj o in Pack.Options)
                     {
                         if (o.Str("group") != grp.Str("id")) continue;
-                        if (!any) list.Controls.Add(new GroupHead(grp.Str("title") ?? "", grp.Str("text")));
+                        if (!any) list.Controls.Add(new GroupHead(grp.Str("title") ?? ""));
                         any = true;
                         list.Controls.Add(new Row(this, o, false));
                     }
                 }
                 JObj video = new JObj();
                 video["id"] = "video"; video["app"] = true; video["title"] = Video.Title; video["text"] = Video.Text;
-                list.Controls.Add(new GroupHead("This PC", "Not part of the pack: the game's own settings file."));
+                list.Controls.Add(new GroupHead("This PC"));
                 list.Controls.Add(new Row(this, video, false));
             }
             list.ResumeLayout();
