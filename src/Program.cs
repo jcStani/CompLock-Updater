@@ -82,7 +82,7 @@ namespace CompLock
             Pack pack = new Pack(data);
             pack.LowVideo = State.Load(Path.Combine(citadel, "addons")).Video != false && Environment.GetEnvironmentVariable("COMPLOCK_VIDEO") != "0";
             int scale;
-            pack.RenderScale = int.TryParse(Environment.GetEnvironmentVariable("COMPLOCK_SCALE"), out scale) ? scale : State.Load(Path.Combine(citadel, "addons")).Scale ?? Video.DefaultScale;
+            pack.RenderScale = int.TryParse(Environment.GetEnvironmentVariable("COMPLOCK_SCALE"), out scale) ? scale : Video.DefaultScale;
             if (a[0] == "--remove")
             {
                 bool restored;

@@ -387,9 +387,8 @@ namespace CompLock
     {
         public const string Title = "Recommended Video Settings";
         public const string Text = "Sets the quality options in your video.txt to the game's lowest: no ambient occlusion, bloom, anti-aliasing, upscaler, "
-            + "depth of field or motion blur, low shadows, fog, textures and shaders, and the render scale to the one picked here. Resolution and window mode stay as they are.";
-        public const int DefaultScale = 75;
-        public static readonly int[] Scales = { 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100 };
+            + "depth of field or motion blur, low shadows, fog, textures and shaders, and the render scale to 100%. Resolution and window mode stay as they are.";
+        public const int DefaultScale = 100;
         const string ScaleKey = "setting.mat_viewportscale";
         static string ScaleText(int percent) { return (percent / 100.0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture); }
         static bool ScaleIs(string value, int percent)

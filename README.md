@@ -21,7 +21,7 @@ GitHub Actions (`.github/workflows/release.yml`), and its page under
 - Install or Apply puts the selection in place. A mod that is out of date gets its own Update button; changing the
   selection never updates other mods on the side.
 - Recommended Video Settings sets the quality options of your `video.txt` to the game's lowest and the render scale
-  to the one you pick (75% unless changed).
+  to 100%.
 - It asks the site when the window opens and while it is open. Nothing runs in the background or at startup.
 
 ## What it changes on your PC

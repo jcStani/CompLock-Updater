@@ -105,7 +105,7 @@ Check-That "gameinfo.gi was written, the stock one kept beside it" (((Get-Conten
 Check-That "mods.txt and complock.json are there, the download folder is gone" ((Test-Path "$addons\mods.txt") -and (Test-Path "$addons\complock.json") -and -not (Test-Path "$addons\.complock-tmp"))
 $v = [IO.File]::ReadAllText("$ud\video.txt")
 Check-That "video.txt: the player's file in Steam's userdata is set to the lowest settings" ($v -match '"setting.r_citadel_ssao_quality"\s+"0"' -and $v -match '"setting.r_effects_bloom"\s+"false"' -and $v -match '"setting.r_citadel_upscaling"\s+"0"' -and $v -match '"setting.r_citadel_shadow_quality"\s+"0"' -and $v -match '"setting.r_texture_stream_mip_bias"\s+"2"' -and $v -match '"setting.r_depth_of_field"\s+"false"')
-Check-That "resolution and window mode stay, render scale is the default 75%; the file from before is kept; none appears in the game's cfg folder" ($v -match '"setting.defaultres"\s+"1920"' -and $v -match '"setting.fullscreen"\s+"1"' -and $v -match '"setting.mat_viewportscale"\s+"0.75"' -and [IO.File]::ReadAllText("$ud\video.txt.complock-bak") -ceq $video -and -not (Test-Path "$cit\cfg\video.txt"))
+Check-That "resolution and window mode stay, render scale is 100%; the file from before is kept; none appears in the game's cfg folder" ($v -match '"setting.defaultres"\s+"1920"' -and $v -match '"setting.fullscreen"\s+"1"' -and $v -match '"setting.mat_viewportscale"\s+"1(\.0+)?"' -and [IO.File]::ReadAllText("$ud\video.txt.complock-bak") -ceq $video -and -not (Test-Path "$cit\cfg\video.txt"))
 $o = Run-App @("--look", $g)
 Check-That "then up to date, with the selection read back" ($o -match 'up to date: True' -and $o -match 'pack: soundcap,hpbars')
 # another copy of one of the pack's mods under a number the pack doesn't use (an older build put there by hand)
@@ -166,14 +166,16 @@ $o = Run-App @("--update", $g, "soundcap")
 Check-That "another row's update leaves video.txt alone" ([IO.File]::ReadAllText("$ud\video.txt") -match '"setting.r_citadel_shadow_quality"\s+"2"')
 $o = Run-App @("--update", $g, "video")
 Check-That "its own row's update sets it back; the file kept from before is still the first one" ([IO.File]::ReadAllText("$ud\video.txt") -match '"setting.r_citadel_shadow_quality"\s+"0"' -and [IO.File]::ReadAllText("$ud\video.txt.complock-bak") -ceq $video)
-# another render scale picked on the row
-$env:COMPLOCK_SCALE = "60"; $o = Run-App @("--look", $g)
-Check-That "another render scale picked is a change of selection, not an update" ($o -match 'video pending: True' -and $o -match 'video update: False')
-$o = Run-App @("--apply", $g, "soundcap,hpbars"); $env:COMPLOCK_SCALE = ""
-Check-That "Apply sets it" ([IO.File]::ReadAllText("$ud\video.txt") -match '"setting.mat_viewportscale"\s+"0.6"')
-[IO.File]::WriteAllText("$ud\video.txt", ([IO.File]::ReadAllText("$ud\video.txt") -replace '("setting.mat_viewportscale"\s+)"0.6"', '$1"0.60000002"'))
+# the render scale is always 100% now. An earlier version of the app set 75% (or one picked on the row) and recorded
+# it: COMPLOCK_SCALE stands in for that version here
+$env:COMPLOCK_SCALE = "75"; $o = Run-App @("--apply", $g, "soundcap,hpbars"); $env:COMPLOCK_SCALE = ""
 $o = Run-App @("--look", $g)
-Check-That "it is remembered, and the game's own way of writing the number is the same value" ($o -match 'video: scale 60' -and $o -match 'up to date: True')
+Check-That "a render scale of 75% left by an earlier version is a change to apply, not an update" ([IO.File]::ReadAllText("$ud\video.txt") -match '"setting.mat_viewportscale"\s+"0.75"' -and $o -match 'video pending: True' -and $o -match 'video update: False')
+$o = Run-App @("--apply", $g, "soundcap,hpbars")
+Check-That "Apply sets it to 100%" ([IO.File]::ReadAllText("$ud\video.txt") -match '"setting.mat_viewportscale"\s+"1"')
+[IO.File]::WriteAllText("$ud\video.txt", ([IO.File]::ReadAllText("$ud\video.txt") -replace '("setting.mat_viewportscale"\s+)"1"', '$1"1.000000"'))
+$o = Run-App @("--look", $g)
+Check-That "the game's own way of writing the number is the same value" ($o -match 'video: scale 100' -and $o -match 'up to date: True')
 $env:COMPLOCK_VIDEO = "0"; $o = Run-App @("--apply", $g, "soundcap,hpbars"); $env:COMPLOCK_VIDEO = ""
 Set-Shadows "3"
 $o = Run-App @("--look", $g)

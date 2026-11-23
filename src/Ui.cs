@@ -299,30 +299,6 @@ namespace CompLock
                 }
             }
 
-            if (app)
-            {
-                y += Th.Px(4);
-                int v = pack.RenderScale, i = Array.IndexOf(Video.Scales, v), bh = Th.Px(28), bw = Th.Px(30), vw = Th.Px(150);
-                Th.Text(g, paint, "RENDER SCALE", Th.Caps, on ? Th.Muted : Th.Line, x, y + Th.Px(8));
-                int fx = x + Th.Measure(g, "RENDER SCALE", Th.Caps).Width + Th.Px(12);
-                Rectangle l = new Rectangle(fx, y, bw, bh), mid = new Rectangle(fx + bw + Th.Px(6), y, vw, bh), r = new Rectangle(mid.Right + Th.Px(6), y, bw, bh);
-                bool down = on && i > 0, up = on && i >= 0 && i < Video.Scales.Length - 1;
-                if (paint)
-                {
-                    Th.Box(g, l, Th.Px(6), Color.Empty, Th.Line); Th.Box(g, r, Th.Px(6), Color.Empty, Th.Line); Th.Box(g, mid, Th.Px(6), Th.Panel2, Th.Line);
-                    using (Pen pen = new Pen(down ? Th.Fg : Th.Line, Th.Px(2)))
-                        g.DrawLines(pen, new Point[] { new Point(l.X + bw / 2 + Th.Px(3), l.Y + Th.Px(8)), new Point(l.X + bw / 2 - Th.Px(3), l.Y + bh / 2), new Point(l.X + bw / 2 + Th.Px(3), l.Bottom - Th.Px(8)) });
-                    using (Pen pen = new Pen(up ? Th.Fg : Th.Line, Th.Px(2)))
-                        g.DrawLines(pen, new Point[] { new Point(r.X + bw / 2 - Th.Px(3), r.Y + Th.Px(8)), new Point(r.X + bw / 2 + Th.Px(3), r.Y + bh / 2), new Point(r.X + bw / 2 - Th.Px(3), r.Bottom - Th.Px(8)) });
-                }
-                string shown = v + "%" + (v == Video.DefaultScale ? "  (default)" : "");
-                Size ss = Th.Measure(g, shown, Th.Body);
-                Th.Text(g, paint, shown, Th.Body, on ? Th.Fg : Th.Muted, mid.X + (vw - ss.Width) / 2, mid.Y + (bh - ss.Height) / 2);
-                if (down) Hot(l, paint, delegate { host.SetScale(Video.Scales[i - 1]); });
-                if (up) Hot(r, paint, delegate { host.SetScale(Video.Scales[i + 1]); });
-                y += bh + Th.Px(2);
-            }
-
             if (item.Obj("fov") != null && pack.Fov != null)
             {
                 y += Th.Px(4);
@@ -557,7 +533,6 @@ namespace CompLock
             list.AutoScrollPosition = new Point(0, -list.AutoScrollPosition.Y - e.Delta * Th.Px(70) / 120);
             base.OnMouseWheel(e);
         }
-        static int Scale(State st) { return st.Scale != null && Array.IndexOf(Video.Scales, (int)st.Scale) >= 0 ? (int)st.Scale : Video.DefaultScale; }
         void Post(Action a) { try { if (!IsDisposed && IsHandleCreated) BeginInvoke(a); } catch { } }
 
         public static void Open(string what) { try { Process.Start(what); } catch { } }
@@ -569,7 +544,7 @@ namespace CompLock
             if (data == null) return;
             tooOld = data.Num("app_min", 0) > Web.AppVersion;
             Pack = new Pack(data);
-            if (Citadel != null) { State st = State.Load(Path.Combine(Citadel, "addons")); Pack.LowVideo = st.Video != false; Pack.RenderScale = Scale(st); }
+            if (Citadel != null) Pack.LowVideo = State.Load(Path.Combine(Citadel, "addons")).Video != false;
             Dictionary<string, object> s = code != null ? Pack.Decode(code == "none" ? "" : code) : Citadel != null ? Installer.Installed(Pack, Citadel) : null;
             if (s != null) Pack.Sel = s;
             if (Citadel != null) check = Installer.Look(Pack, Citadel);
@@ -593,7 +568,7 @@ namespace CompLock
                     if (data != null)
                     {
                         p = new Pack(data);
-                        if (cit != null) { State st = State.Load(Path.Combine(cit, "addons")); p.LowVideo = st.Video != false; p.RenderScale = Scale(st); }
+                        if (cit != null) p.LowVideo = State.Load(Path.Combine(cit, "addons")).Video != false;
                         Dictionary<string, object> s = cit != null ? Installer.Installed(p, cit) : null;
                         if (s != null) p.Sel = s;
                         if (cit != null) c = Installer.Look(p, cit);
@@ -700,7 +675,6 @@ namespace CompLock
         public void Choose(string id, string cid) { if (Busy) return; lock (Pack) Pack.Choose(id, cid); Changed(); }
         public void SetFov(string v) { if (Busy) return; lock (Pack) Pack.SetFov(v); Changed(); }
         public void SetVideo(bool on) { if (Busy) return; lock (Pack) Pack.LowVideo = on; Changed(); }
-        public void SetScale(int percent) { if (Busy) return; lock (Pack) Pack.RenderScale = percent; Changed(); }
 
         public void PickFolder()
         {
