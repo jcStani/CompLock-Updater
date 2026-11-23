@@ -139,20 +139,60 @@ namespace CompLock
     {
         public const string AppId = "1422450";
 
-        public static string CitadelOf(string dir)
+        static readonly string[] Inside = { "game\\citadel", "citadel", "" };
+        static readonly string[] Below = { "game\\citadel", "citadel", "", "steamapps\\common\\Deadlock\\game\\citadel", "common\\Deadlock\\game\\citadel", "Deadlock\\game\\citadel" };
+        static readonly string[] Usual = { "SteamLibrary", "Steam", "Program Files (x86)\\Steam", "Program Files\\Steam", "Games\\Steam", "Games\\SteamLibrary", "Steam Library", "SteamGames", "Games" };
+
+        static bool IsCitadel(string d)
+        {
+            try
+            {
+                if (!File.Exists(Path.Combine(d, "gameinfo.gi"))) return false;
+                return string.Equals(Path.GetFileName(d.TrimEnd('\\', '/')), "citadel", StringComparison.OrdinalIgnoreCase)
+                    || Directory.Exists(Path.Combine(d, "addons")) || File.Exists(Path.Combine(d, "pak01_dir.vpk"));
+            }
+            catch { return false; }
+        }
+
+        public static string CitadelOf(string dir, bool near = false)
         {
             if (string.IsNullOrEmpty(dir)) return null;
-            foreach (string sub in new string[] { "game\\citadel", "citadel", "" })
+            try
             {
-                try
+                string at = Path.GetFullPath(dir.Trim().Trim('"'));
+                for (int up = 0; at != null && up < (near ? 6 : 1); up++)
                 {
-                    string d = sub == "" ? dir : Path.Combine(dir, sub);
-                    if (File.Exists(Path.Combine(d, "gameinfo.gi")) && (Directory.Exists(Path.Combine(d, "addons")) || File.Exists(Path.Combine(d, "pak01_dir.vpk"))))
-                        return Path.GetFullPath(d);
+                    foreach (string sub in up == 0 && near ? Below : Inside)
+                    {
+                        string d = sub == "" ? at : Path.Combine(at, sub);
+                        if (IsCitadel(d)) return Path.GetFullPath(d);
+                    }
+                    at = Path.GetDirectoryName(at);
                 }
-                catch { }
+                if (near)
+                    foreach (string n in Usual)
+                    {
+                        string c = InLibrary(Path.Combine(Path.GetFullPath(dir.Trim().Trim('"')), n));
+                        if (c != null) return c;
+                    }
             }
+            catch { }
             return null;
+        }
+
+        public static string Why(string dir)
+        {
+            try
+            {
+                string full = Path.GetFullPath(dir);
+                if (!Directory.Exists(full)) return "this app can't open " + full;
+                string gi = Path.Combine(full, "game\\citadel\\gameinfo.gi");
+                try { File.GetAttributes(gi); }
+                catch (UnauthorizedAccessException) { return "Windows won't let this app read " + gi; }
+                catch { }
+                return "there is no game\\citadel\\gameinfo.gi in " + full;
+            }
+            catch (Exception e) { return e.Message; }
         }
 
         public static List<string> Roots()
@@ -170,31 +210,120 @@ namespace CompLock
             return roots;
         }
 
-        public static string FindGame()
+        static void AddLib(List<string> libs, string p)
+        {
+            if (string.IsNullOrEmpty(p)) return;
+            p = p.Replace('/', '\\');
+            foreach (string x in libs) if (string.Equals(x.TrimEnd('\\'), p.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)) return;
+            libs.Add(p);
+        }
+
+        public static List<string> Libraries()
         {
             List<string> libs = new List<string>();
             foreach (string root in Roots())
             {
+                foreach (string f in new string[] { "config\\libraryfolders.vdf", "steamapps\\libraryfolders.vdf" })
+                {
+                    try
+                    {
+                        string vdf = File.ReadAllText(Path.Combine(root, f));
+                        foreach (Match m in Regex.Matches(vdf, "^[ \\t]*\"(?:path|\\d+)\"[ \\t]+\"([^\"\\r\\n]+)\"", RegexOptions.Multiline))
+                        {
+                            string p = m.Groups[1].Value.Replace("\\\\", "\\");
+                            if (p.IndexOf(":\\") == 1 || p.StartsWith("\\\\")) AddLib(libs, p);
+                        }
+                    }
+                    catch { }
+                }
+                AddLib(libs, root);
+            }
+            return libs;
+        }
+
+        static string InLibrary(string lib)
+        {
+            try
+            {
+                List<string> names = new List<string>();
+                string acf = Path.Combine(lib, "steamapps\\appmanifest_" + AppId + ".acf");
                 try
                 {
-                    string vdf = File.ReadAllText(Path.Combine(root, "steamapps\\libraryfolders.vdf"));
-                    foreach (Match m in Regex.Matches(vdf, "\"path\"\\s+\"([^\"]+)\"")) libs.Add(m.Groups[1].Value.Replace("\\\\", "\\"));
+                    if (File.Exists(acf))
+                    {
+                        Match m = Regex.Match(File.ReadAllText(acf), "\"installdir\"\\s+\"([^\"]+)\"");
+                        if (m.Success) names.Add(m.Groups[1].Value);
+                    }
                 }
                 catch { }
-                libs.Add(root);
-            }
-            foreach (string lib in libs)
-            {
-                try
+                if (!names.Contains("Deadlock")) names.Add("Deadlock");
+                foreach (string n in names)
                 {
-                    string acf = Path.Combine(lib, "steamapps\\appmanifest_" + AppId + ".acf");
-                    if (!File.Exists(acf)) continue;
-                    Match m = Regex.Match(File.ReadAllText(acf), "\"installdir\"\\s+\"([^\"]+)\"");
-                    string c = CitadelOf(Path.Combine(lib, "steamapps\\common\\" + (m.Success ? m.Groups[1].Value : "Deadlock")));
+                    string c = CitadelOf(Path.Combine(lib, "steamapps\\common\\" + n));
                     if (c != null) return c;
                 }
+            }
+            catch { }
+            return null;
+        }
+
+        static string FromRunning()
+        {
+            foreach (string n in new string[] { "deadlock", "project8", "citadel" })
+            {
+                Process[] ps;
+                try { ps = Process.GetProcessesByName(n); } catch { continue; }
+                string found = null;
+                foreach (Process p in ps)
+                {
+                    try { if (found == null) found = CitadelOf(Path.GetDirectoryName(p.MainModule.FileName), true); } catch { }
+                    p.Dispose();
+                }
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        static bool told;
+
+        public static string FindGame()
+        {
+            List<string> libs = Libraries();
+            foreach (string lib in libs)
+            {
+                string c = InLibrary(lib);
+                if (c != null) return c;
+            }
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("COMPLOCK_STEAM")))
+            {
+                foreach (string k in new string[] { "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " + AppId,
+                    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " + AppId,
+                    "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " + AppId })
+                {
+                    try { string c = CitadelOf(Registry.GetValue(k, "InstallLocation", null) as string); if (c != null) return c; } catch { }
+                }
+                string run = FromRunning();
+                if (run != null) return run;
+                try
+                {
+                    foreach (DriveInfo d in DriveInfo.GetDrives())
+                    {
+                        try
+                        {
+                            if (d.DriveType != DriveType.Fixed || !d.IsReady) continue;
+                            foreach (string n in Usual)
+                            {
+                                string c = InLibrary(Path.Combine(d.Name, n));
+                                if (c != null) return c;
+                            }
+                        }
+                        catch { }
+                    }
+                }
                 catch { }
             }
+            if (!told) Log.Write("game folder not found; Steam libraries looked in: " + (libs.Count > 0 ? string.Join("; ", libs.ToArray()) : "none (Steam isn't in the registry)"));
+            told = true;
             return null;
         }
 

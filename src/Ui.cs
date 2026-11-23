@@ -711,8 +711,14 @@ namespace CompLock
                 d.ShowNewFolderButton = false;
                 if (Citadel != null) d.SelectedPath = Path.GetFullPath(Path.Combine(Citadel, "..\\.."));
                 if (d.ShowDialog(this) != DialogResult.OK) return;
-                string c = Steam.CitadelOf(d.SelectedPath);
-                if (c == null) { Say("That isn't Deadlock's folder. Pick the one Steam opens with Manage › Browse local files.", Th.Caution); return; }
+                string c = Steam.CitadelOf(d.SelectedPath, true);
+                if (c == null)
+                {
+                    string why = Steam.Why(d.SelectedPath);
+                    Log.Write("folder picked but not taken: " + d.SelectedPath + ": " + why);
+                    Say("That isn't Deadlock's folder: " + why + ". Pick the folder named Deadlock.", Th.Caution);
+                    return;
+                }
                 settings.Game = c; settings.Save();
                 Reload();
             }

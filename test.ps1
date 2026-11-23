@@ -266,5 +266,35 @@ $env:COMPLOCK_REPLACE = "1"; $o = Run-App @("--install", $g, "none"); $env:COMPL
 $o = Run-App @("--look", $g, "none")
 Check-That "answered with replace, it is replaced where it is and nothing is moved" ($o -match 'up to date: True' -and @(Get-ChildItem "$addons\pak*_dir.vpk").Count -eq $before)
 
+# ---------- finding the game: Steam on one drive, the game in a library on another, never modded (no addons folder).
+# --find prints the citadel folder the app would use: with no argument what it finds through Steam, with one what it
+# makes of a folder picked by hand. With COMPLOCK_STEAM set it looks nowhere but under that made-up Steam.
+$keep = $env:COMPLOCK_STEAM
+$fs = Join-Path $Work "find\steam"; $fl = Join-Path $Work "find\GamesSSD\SteamLibrary"; $fg = "$fl\steamapps\common\Deadlock"; $fc = "$fg\game\citadel"
+New-Item -ItemType Directory -Force "$fs\steamapps", "$fs\config", $fc, "$fg\game\bin\win64", "$fl\steamapps\common\Other" | Out-Null
+[IO.File]::WriteAllText("$fc\gameinfo.gi", "x")
+$env:COMPLOCK_STEAM = $fs
+$q = { param($p) $p.Replace('\', '\\') }
+$first = "`"libraryfolders`"`n{`n`t`"0`"`n`t{`n`t`t`"path`"`t`t`"$(& $q $fs)`"`n`t`t`"apps`"`n`t`t{`n`t`t`t`"228980`"`t`t`"1`"`n`t`t}`n`t}`n"
+$both = $first + "`t`"1`"`n`t{`n`t`t`"path`"`t`t`"$(& $q $fl)`"`n`t`t`"apps`"`n`t`t{`n`t`t`t`"1422450`"`t`t`"2`"`n`t`t}`n`t}`n}`n"; $only = $first + "}`n"
+$old = "`"LibraryFolders`"`n{`n`t`"TimeNextStatsReport`"`t`t`"1700000000`"`n`t`"ContentStatsID`"`t`t`"-1`"`n`t`"1`"`t`t`"$(& $q $fl)`"`n}`n"
+$acf = "$fl\steamapps\appmanifest_1422450.acf"; $list = "$fs\steamapps\libraryfolders.vdf"
+[IO.File]::WriteAllText($acf, "`"AppState`"`n{`n`t`"appid`"`t`t`"1422450`"`n`t`"installdir`"`t`t`"Deadlock`"`n}`n")
+[IO.File]::WriteAllText($list, $both)
+$o = Run-App @("--find"); Check-That "the game in a second library is found, with no addons folder yet" ($o -eq "found: $fc")
+[IO.File]::WriteAllText($list, $only); [IO.File]::WriteAllText("$fs\config\libraryfolders.vdf", $both)
+$o = Run-App @("--find"); Check-That "a library that only Steam's config\libraryfolders.vdf lists is found" ($o -eq "found: $fc")
+Remove-Item "$fs\config\libraryfolders.vdf"; [IO.File]::WriteAllText($list, $old)
+$o = Run-App @("--find"); Check-That "the older form of libraryfolders.vdf is read" ($o -eq "found: $fc")
+[IO.File]::WriteAllText($list, $both); Remove-Item $acf
+$o = Run-App @("--find"); Check-That "a library without the game's appmanifest is still looked in" ($o -eq "found: $fc")
+[IO.File]::WriteAllText($list, $only)
+$o = Run-App @("--find"); Check-That "a game in no library Steam lists is not found there" ($o -match '^found: nothing' -and $code -eq 3)
+foreach ($pick in @($fg, "$fg\game", $fc, "$fg\game\bin\win64", "$fl\steamapps\common", $fl, (Split-Path $fl))) {
+    $o = Run-App @("--find", $pick); Check-That "picked by hand, $($pick.Substring($Work.Length + 6)) gives the game's folder" ($o -eq "found: $fc")
+}
+$o = Run-App @("--find", "$fl\steamapps\common\Other"); Check-That "another game's folder is not taken, and the app says what is missing" ($o -match 'found: nothing \(there is no game\\citadel\\gameinfo\.gi')
+$env:COMPLOCK_STEAM = $keep
+
 if ($fails) { "$fails failed"; exit 1 }
 "all passed"

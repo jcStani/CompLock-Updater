@@ -25,6 +25,12 @@ namespace CompLock
             try
             {
                 if (mode == "--gameinfo") return Gameinfo(args);
+                if (mode == "--find")
+                {
+                    string at = args.Length > 1 ? Steam.CitadelOf(args[1], true) : Steam.FindGame();
+                    Console.WriteLine("found: " + (at ?? "nothing" + (args.Length > 1 ? " (" + Steam.Why(args[1]) + ")" : "")));
+                    return at != null ? 0 : 3;
+                }
                 if (mode == "--look" || mode == "--install" || mode == "--apply" || mode == "--update" || mode == "--remove" || mode == "--grimoire") return Headless(args);
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
                 Application.ThreadException += delegate (object s, System.Threading.ThreadExceptionEventArgs e)
