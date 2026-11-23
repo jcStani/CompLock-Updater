@@ -340,7 +340,7 @@ namespace CompLock
             int P = Th.Px(20), y = Th.Px(14);
             Th.Text(g, paint, "CompLock", Th.Title, Th.Fg, P, y);
             int tw = Th.Measure(g, "CompLock", Th.Title).Width;
-            string sub = "By jcStani and HoppCX  ·  " + Build.Date;
+            string sub = "By jcStani  ·  " + Build.Date;
             Th.Text(g, paint, sub, Th.Body, Th.Muted, P + tw + Th.Px(12), y + Th.Px(11));
             string site = Web.Base.Replace("https://", "");
             Size ss = Th.Measure(g, site, Th.Body);

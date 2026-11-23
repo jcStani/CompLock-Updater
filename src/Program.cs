@@ -9,8 +9,8 @@ using System.Windows.Forms;
 [assembly: AssemblyTitle("CompLock")]
 [assembly: AssemblyProduct("CompLock Updater")]
 [assembly: AssemblyDescription("Installs the CompLock pack for Deadlock and shows when a mod has an update")]
-[assembly: AssemblyCompany("jcStani and HoppCX")]
-[assembly: AssemblyCopyright("Copyright (c) 2026 jcStani and HoppCX")]
+[assembly: AssemblyCompany("jcStani")]
+[assembly: AssemblyCopyright("Copyright (c) 2026 jcStani")]
 [assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
 
 namespace CompLock

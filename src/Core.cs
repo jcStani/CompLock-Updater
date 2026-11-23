@@ -33,7 +33,7 @@ namespace CompLock
 
     static class Web
     {
-        public const int AppVersion = 2;
+        public const int AppVersion = 3;
         public static string Base = "https://deadlockconfig.com";
         public static string LastRaw;
         public static readonly string DataDir = Environment.GetEnvironmentVariable("COMPLOCK_HOME")
