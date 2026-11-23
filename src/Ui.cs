@@ -441,7 +441,7 @@ namespace CompLock
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(Th.Px(780), Math.Min(Th.Px(900), Screen.PrimaryScreen.WorkingArea.Height - Th.Px(60)));
             MinimumSize = new Size(Th.Px(620), Th.Px(520));
-            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+            try { using (Stream s = typeof(MainForm).Assembly.GetManifestResourceStream("CompLock.icon.ico")) Icon = new Icon(s); } catch { }
             head = new Head(this); foot = new Foot(this);
             head.Dock = DockStyle.Top; head.Height = Th.Px(96);
             foot.Dock = DockStyle.Bottom; foot.Height = Th.Px(104);

@@ -13,7 +13,7 @@ if (-not $version.Success) { throw "AppVersion not found in src\Core.cs" }
 [IO.File]::WriteAllText($stamp, "[assembly: System.Reflection.AssemblyVersion(`"$($version.Groups[1].Value).0.0.0`")]`n" +
     "namespace CompLock { static class Build { public const string Date = `"$date`"; } }")
 try {
-    & $csc /nologo /target:winexe /optimize+ /platform:anycpu /warn:4 "/out:$out" "/win32icon:$here\icon.ico" "/win32manifest:$here\app.manifest" `
+    & $csc /nologo /target:winexe /optimize+ /platform:anycpu /warn:4 "/out:$out" "/win32icon:$here\icon.ico" "/resource:$here\icon.ico,CompLock.icon.ico" "/win32manifest:$here\app.manifest" `
         /r:System.dll /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll "$here\src\*.cs" $stamp
 }
 finally { Remove-Item $stamp -Force -ErrorAction SilentlyContinue }
